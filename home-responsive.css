@@ -1,11 +1,9 @@
 @media (max-width: 991.98px) {
     .col-product {
-        width: 33.33%;
+        width: 400px;
     }
 
-    .card-image {
-        height: 170px;
-    }
+
 
     .header-middle-center {
         padding: 0;
@@ -42,7 +40,9 @@
     }
 
     .home-service-item{
-        width: 50%;
+        width: 90%;
+        max-width: 100%;
+
     }
 }
 
@@ -51,10 +51,23 @@
         width: 70px;
     }
 }
+.header-middle-right-item {
+    display: flex;
+    align-items: center;
+}
 
+.header-middle-right-item > i.fa-solid.fa-user {
+    margin-right: -1px; /* Điều chỉnh khoảng cách giữa icon và chữ */
+}
 @media (max-width: 785px) {
-    .header-middle-right-item>span,.auth-container{
-        display: none;
+    .header-middle-right-item > span,
+    .auth-container .text-dndk {
+        display: none !important;
+    }
+    .auth-container .text-tk {
+        display: inline-block !important;
+        font-size: 10px; /* Điều chỉnh kích thước chữ ở đây */
+        white-space: nowrap; /* Thêm thuộc tính này */
     }
 
     .advanced-search .container{
@@ -84,9 +97,9 @@
         display: block!important;
     }
 
-    .home-slider {
+    /* .home-slider {
         padding: 0 10px;
-    }
+    } */
 
 
     .home-service-item{
@@ -126,10 +139,10 @@
     }
 
     .product-image {
-        max-height: 255px;
+        max-height: 100%;
     }
 
-    .food-info {
+    .book-info {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;

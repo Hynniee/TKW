@@ -69,7 +69,7 @@ function detailProduct(index) {
                 <input class="plus is-form" type="button" value="+" onclick="increasingNumber(this)">
             </div>
         </div>
-        <p class="product-description">${infoProduct.desc}</p>
+        <p class="product-description product-detail-desc"></p>
     </div>
     <div class="notebox">
             <p class="notebox-title">Ghi chú</p>
@@ -82,7 +82,7 @@ function detailProduct(index) {
         </div>
         <div class="modal-footer-control">
             <button class="button-dathangngay" data-product="${infoProduct.id}">Đặt hàng ngay</button>
-            <button class="button-dat" id="add-cart" onclick="animationCart()"><i class="fa-light fa-basket-shopping">Thêm vào giỏ hàng</i></button>
+            <button class="button-dat" id="add-cart" onclick="animationCart()"><i class="fa-solid fa-basket-shopping"></i>Thêm vào giỏ hàng</button>
         </div>
     </div>`;
     document.querySelector('#product-detail-content').innerHTML = modalHtml;
@@ -112,6 +112,59 @@ function detailProduct(index) {
     })
     // Mua ngay san pham
     dathangngay();
+    const descEl = document.querySelector('.product-detail-desc');
+    // Lấy mô tả đầy đủ từ sản phẩm
+    const fullDesc = infoProduct.desc;
+    const maxLines = 5; // Số dòng muốn hiển thị trước khi "Xem thêm"
+
+    // Gán HTML đầy đủ vào descEl
+    descEl.innerHTML = fullDesc;
+
+    // Áp dụng CSS để ẩn bớt nếu dài
+    descEl.style.position = 'relative';
+    descEl.style.overflow = 'hidden';
+    descEl.style.display = '-webkit-box';
+    descEl.style.webkitBoxOrient = 'vertical';
+    descEl.style.webkitLineClamp = maxLines;
+    descEl.style.maxHeight = (1.6 * maxLines) + 'em'; // 1.6em mỗi dòng
+
+    // Tạo nút "Xem thêm" nếu nội dung bị cắt
+    setTimeout(() => {
+        if (descEl.scrollHeight > descEl.clientHeight + 5) {
+            // Tạo fade
+            let fade = document.createElement('div');
+            fade.style.position = 'absolute';
+            fade.style.left = 0;
+            fade.style.right = 0;
+            fade.style.bottom = 0;
+            fade.style.height = '2em';
+            fade.style.background = 'linear-gradient(to bottom, rgba(255,255,255,0), #fff 90%)';
+            fade.style.pointerEvents = 'none';
+            descEl.appendChild(fade);
+
+            // Tạo nút "Xem thêm"
+            let more = document.createElement('span');
+            more.className = 'desc-more';
+            more.textContent = 'Xem thêm';
+            more.style.position = 'absolute';
+            more.style.right = '0.5em';
+            more.style.bottom = '0.2em';
+            more.style.background = '#fff';
+            more.style.cursor = 'pointer';
+            more.style.color = '#35796b';
+            more.style.fontWeight = '500';
+            more.style.textDecoration = 'underline';
+            more.onclick = function(e) {
+                e.stopPropagation();
+                descEl.style.webkitLineClamp = 'unset';
+                descEl.style.maxHeight = 'none';
+                descEl.style.overflow = 'visible';
+                fade.remove();
+                more.remove();
+            };
+            descEl.appendChild(more);
+        }
+    }, 10);
 }
 
 function animationCart() {
@@ -166,9 +219,12 @@ function showCart() {
                     ${vnd(parseInt(product.price))}
                     </span>
                 </div>
-                <p class="product-note"><i class="fa-light fa-pencil"></i><span>${product.note}</span></p>
+                <p class="product-note"><i class="fa-solid fa-pencil"></i><span>${product.note}</span></p>
                 <div class="cart-item-control">
-                    <button class="cart-item-delete" onclick="deleteCartItem(${product.id},this)">Xóa</button>
+                   <button class="cart-item-delete" onclick="deleteCartItem(${product.id}, this)">
+                    <i class="fa-solid fa-trash"></i> Xóa
+                    </button>
+
                     <div class="buttons_added">
                         <input class="minus is-form" type="button" value="-" onclick="decreasingNumber(this)">
                         <input class="input-qty" max="100" min="1" name="" type="number" value="${product.soluong}">
@@ -186,7 +242,7 @@ function showCart() {
     }
     let modalCart = document.querySelector('.modal-cart');
     let containerCart = document.querySelector('.cart-container');
-    let themmon = document.querySelector('.them-mon');
+    let themmon = document.querySelector('.them-sach');
     modalCart.onclick = function () {
         closeCart();
     }
@@ -504,20 +560,38 @@ function kiemtradangnhap() {
     let currentUser = localStorage.getItem('currentuser');
     if (currentUser != null) {
         let user = JSON.parse(currentUser);
-        document.querySelector('.auth-container').innerHTML = `<span class="text-dndk">Tài khoản</span>
-            <span class="text-tk">${user.fullname} <i class="fa-sharp fa-solid fa-caret-down"></span>`
-        document.querySelector('.header-middle-right-menu').innerHTML = `<li><a href="javascript:;" onclick="myAccount()"><i class="fa-light fa-circle-user"></i> Tài khoản của tôi</a></li>
-            <li><a href="javascript:;" onclick="orderHistory()"><i class="fa-regular fa-bags-shopping"></i> Đơn hàng đã mua</a></li>
-            <li class="border"><a id="logout" href="javascript:;"><i class="fa-light fa-right-from-bracket"></i> Thoát tài khoản</a></li>`
-         if (user.fullname === "Khách") {
+
+        // Cập nhật phần hiển thị tên tài khoản
+        document.querySelector('.auth-container').innerHTML = `
+            <span class="text-dndk">Tài khoản</span>
+            <span class="text-tk">${user.fullname} <i class="fa-solid fa-caret-down"></i></span>
+        `;
+
+        // ✅ Khai báo trước để dùng chung
+        let menuHtml = '';
+
+        if (user.fullname === "Khách") {
+            // Nếu là khách thì chỉ có nút Thoát
             menuHtml = `
-                <li class="border"><a id="logout" href="javascript:;"><i class="fa-light fa-right-from-bracket"></i> Thoát tài khoản</a></li>
+                <li class="border"><a id="logout" href="javascript:;"><i class="fa-solid fa-right-from-bracket"></i> Thoát tài khoản</a></li>
+            `;
+        } else {
+            // Nếu là tài khoản thật
+            menuHtml = `
+                <li><a href="javascript:;" onclick="myAccount()"><i class="fa-solid fa-user"></i> Tài khoản của tôi</a></li>
+                <li><a href="javascript:;" onclick="orderHistory()"><i class="fa-solid fa-bag-shopping"></i> Đơn hàng đã mua</a></li>
+                <li class="border"><a id="logout" href="javascript:;"><i class="fa-solid fa-right-from-bracket"></i> Thoát tài khoản</a></li>
             `;
         }
+
+        // Gắn menu vào DOM
         document.querySelector('.header-middle-right-menu').innerHTML = menuHtml;
-         document.querySelector('#logout').addEventListener('click', logOut);
+
+        // Gán sự kiện logout
+        document.querySelector('#logout').addEventListener('click', logOut);
     }
 }
+
 function logOut() {
     let user = JSON.parse(localStorage.getItem('currentuser'));
     if (user && user.fullname !== "Khách") {
@@ -539,7 +613,7 @@ function checkAdmin() {
     let user = JSON.parse(localStorage.getItem('currentuser'));
     if(user && user.userType == 1) {
         let node = document.createElement(`li`);
-        node.innerHTML = `<a href="./admin.html"><i class="fa-light fa-gear"></i> Quản lý cửa hàng</a>`
+        node.innerHTML = `<a href="./admin.html"><i class="-solid fa-gear"></i> Quản lý cửa hàng</a>`
         document.querySelector('.header-middle-right-menu').prepend(node);
     } 
 }
@@ -564,7 +638,88 @@ function orderHistory() {
     document.getElementById('order-history').classList.add('open');
     renderOrderProduct();
 }
+//
+function renderOrderProduct() {
+    var orders = JSON.parse(localStorage.getItem('order') || '[]');
+    var orderDetails = JSON.parse(localStorage.getItem('orderDetails') || '[]');
+    var currentUser = JSON.parse(localStorage.getItem('currentuser'));
+    var html = '';
+    var section = document.querySelector('.order-history-section');
+    if (!section) return;
 
+    // Lọc đơn hàng của user hiện tại
+    var userOrders = orders.filter(order => order.khachhang === currentUser.phone);
+
+    if (userOrders.length === 0) {
+        html = '<p>Bạn chưa có đơn hàng nào.</p>';
+    } else {
+        html = `<table class="order-table" style="width:100%;border-collapse:collapse;">
+            <tr>
+                <th>Mã đơn</th>
+                <th>Ngày đặt</th>
+                <th>Trạng thái</th>
+                <th>Tổng tiền</th>
+                <th>Chi tiết</th>
+            </tr>`;
+        userOrders.reverse().forEach(order => {
+            html += `<tr>
+                <td>${order.id}</td>
+                <td>${formatDate(order.thoigiandat)}</td>
+                <td>${order.trangthai === 0 ? 'Chờ xác nhận' : 'Đã xử lý'}</td>
+                <td>${vnd(order.tongtien)}</td>
+                <td>
+                    <button onclick="showOrderDetail('${order.id}')" style="padding:4px 12px;border-radius:4px;background:#35796b;color:#fff;border:none;cursor:pointer;">Xem</button>
+                </td>
+            </tr>`;
+        });
+        html += '</table>';
+    }
+    section.innerHTML = html;
+}
+
+// Hàm xem chi tiết đơn hàng
+function showOrderDetail(orderId) {
+    var orders = JSON.parse(localStorage.getItem('order') || '[]');
+    var orderDetails = JSON.parse(localStorage.getItem('orderDetails') || '[]');
+    var order = orders.find(o => o.id === orderId);
+    var details = orderDetails.filter(d => d.madon === orderId);
+
+    var html = `<h4>Mã đơn: ${order.id}</h4>
+        <p><b>Ngày đặt:</b> ${formatDate(order.thoigiandat)}</p>
+        <p><b>Người nhận:</b> ${order.tenguoinhan} - ${order.sdtnhan}</p>
+        <p><b>Địa chỉ:</b> ${order.diachinhan}</p>
+        <p><b>Ghi chú:</b> ${order.ghichu}</p>
+        <p><b>Trạng thái:</b> ${order.trangthai === 0 ? 'Chờ xác nhận' : 'Đã xử lý'}</p>
+        <table style="width:100%;margin-top:10px;border-collapse:collapse;">
+            <tr>
+                <th>Sản phẩm</th>
+                <th>Số lượng</th>
+                <th>Giá</th>
+            </tr>`;
+    details.forEach(item => {
+        var product = getProductInfo(item.id);
+        html += `<tr>
+            <td>${product ? product.title : 'Sản phẩm đã xóa'}</td>
+            <td>${item.soluong}</td>
+            <td>${vnd(item.price)}</td>
+        </tr>`;
+    });
+    html += `</table>
+        <p style="margin-top:10px;"><b>Tổng tiền:</b> ${vnd(order.tongtien)}</p>`;
+
+    // Hiện popup chi tiết đơn hàng
+    var modal = document.querySelector('.modal.detail-order');
+    var content = document.querySelector('.detail-order-content');
+    if (modal && content) {
+        content.innerHTML = html;
+        modal.classList.add('open');
+    }
+}
+
+function closeOrderDetail() {
+    var modal = document.querySelector('.modal.detail-order');
+    if (modal) modal.classList.remove('open');
+}
 function emailIsValid(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
@@ -690,59 +845,7 @@ function getProductInfo(id) {
     })
 }
 
-// Quan ly don hang
-function renderOrderProduct() {
-    let currentUser = JSON.parse(localStorage.getItem('currentuser'));
-    let order = localStorage.getItem('order') ? JSON.parse(localStorage.getItem('order')) : [];
-    let orderHtml = "";
-    let arrDonHang = [];
-    for (let i = 0; i < order.length; i++) {
-        if (order[i].khachhang === currentUser.phone) {
-            arrDonHang.push(order[i]);
-        }
-    }
-    if (arrDonHang.length == 0) {
-        orderHtml = `<div class="empty-order-section"><img src="./assets/img/empty-order.jpg" alt="" class="empty-order-img"><p>Chưa có đơn hàng nào</p></div>`;
-    } else {
-        arrDonHang.forEach(item => {
-            let productHtml = `<div class="order-history-group">`;
-            let chiTietDon = getOrderDetails(item.id);
-            chiTietDon.forEach(sp => {
-                let infosp = getProductInfo(sp.id);
-                productHtml += `<div class="order-history">
-                    <div class="order-history-left">
-                        <img src="${infosp.img}" alt="">
-                        <div class="order-history-info">
-                            <h4>${infosp.title}!</h4>
-                            <p class="order-history-note"><i class="fa-light fa-pen"></i> ${sp.note}</p>
-                            <p class="order-history-quantity">x${sp.soluong}</p>
-                        </div>
-                    </div>
-                    <div class="order-history-right">
-                        <div class="order-history-price">
-                            <span class="order-history-current-price">${vnd(sp.price)}</span>
-                        </div>                         
-                    </div>
-                </div>`;
-            });
-            let textCompl = item.trangthai == 1 ? "Đã xử lý" : "Đang xử lý";
-            let classCompl = item.trangthai == 1 ? "complete" : "no-complete"
-            productHtml += `<div class="order-history-control">
-                <div class="order-history-status">
-                    <span class="order-history-status-sp ${classCompl}">${textCompl}</span>
-                    <button id="order-history-detail" onclick="detailOrder('${item.id}')"><i class="fa-regular fa-eye"></i> Xem chi tiết</button>
-                </div>
-                <div class="order-history-total">
-                    <span class="order-history-total-desc">Tổng tiền: </span>
-                    <span class="order-history-toltal-price">${vnd(item.tongtien)}</span>
-                </div>
-            </div>`
-            productHtml += `</div>`;
-            orderHtml += productHtml;
-        });
-    }
-    document.querySelector(".order-history-section").innerHTML = orderHtml;
-}
+
 
 // Get Order Details
 function getOrderDetails(madon) {
@@ -756,17 +859,53 @@ function getOrderDetails(madon) {
     return ctDon;
 }
 
-// Format Date
+// Hàm định dạng ngày
 function formatDate(date) {
-    let fm = new Date(date);
-    let yyyy = fm.getFullYear();
-    let mm = fm.getMonth() + 1;
-    let dd = fm.getDate();
-    if (dd < 10) dd = '0' + dd;
-    if (mm < 10) mm = '0' + mm;
-    return dd + '/' + mm + '/' + yyyy;
+    if (!(date instanceof Date)) {
+        date = new Date(date);
+    }
+    if (isNaN(date.getTime())) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 }
 
+// Cập nhật ngày giao dự kiến
+function updateDeliveryDate() {
+    const today = new Date();
+    const estimatedDate = new Date();
+
+    // Kiểm tra loại giao hàng
+    const isExpress = document.getElementById('ship-express').checked;
+    const addDays = isExpress ? 2 : 5;
+
+    estimatedDate.setDate(today.getDate() + addDays);
+
+    document.getElementById('estimated-delivery-date').textContent = formatDate(estimatedDate);
+}
+
+// Gọi khi trang tải xong
+updateDeliveryDate();
+
+// Gắn sự kiện khi thay đổi lựa chọn
+document.getElementById('ship-standard').addEventListener('change', updateDeliveryDate);
+document.getElementById('ship-express').addEventListener('change', updateDeliveryDate);
+
+// Xử lý popup chính sách
+const openBtn = document.getElementById("open-policy");
+const popup = document.getElementById("policy-popup");
+
+if (openBtn && popup) {
+    openBtn.addEventListener("click", () => {
+        popup.style.display = "flex";
+    });
+}
+
+function closePolicy() {
+    const popup = document.getElementById("policy-popup");
+    if (popup) popup.style.display = "none";
+}
 // Xem chi tiet don hang
 function detailOrder(id) {
     let order = JSON.parse(localStorage.getItem("order"));
@@ -824,6 +963,13 @@ window.onscroll = () => {
     }
 }
 
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
 // Auto hide header on scroll
 const headerNav = document.querySelector(".header-bottom");
 let lastScrollY = window.scrollY;
@@ -842,7 +988,7 @@ function renderProducts(showProduct) {
     let productHtml = '';
     if(showProduct.length == 0) {
         document.getElementById("home-title").style.display = "none";
-        productHtml = `<div class="no-result"><div class="no-result-h">Tìm kiếm không có kết quả</div><div class="no-result-p">Xin lỗi, chúng tôi không thể tìm được kết quả hợp với tìm kiếm của bạn</div><div class="no-result-i"><i class="fa-light fa-face-sad-cry"></i></div></div>`;
+        productHtml = `<div class="no-result"><div class="no-result-h">Tìm kiếm không có kết quả</div><div class="no-result-p">Xin lỗi, chúng tôi không thể tìm được kết quả hợp với tìm kiếm của bạn</div><div class="no-result-i"><i class="fa-solid fa-face-sad-cry"></i></div></div>`;
     } else {
         document.getElementById("home-title").style.display = "block";
         showProduct.forEach((product) => {
@@ -853,7 +999,7 @@ function renderProducts(showProduct) {
                     <img class="card-image" src="${product.img}" alt="${product.title}">
                     </a>
                 </div>
-                <div class="food-info">
+                <div class="book-info">
                     <div class="card-content">
                         <div class="card-title">
                             <a href="#" class="card-title-link" onclick="detailProduct(${product.id})">${product.title}</a>
@@ -864,7 +1010,7 @@ function renderProducts(showProduct) {
                             <span class="current-price">${vnd(product.price)}</span>
                         </div>
                     <div class="product-buy">
-                        <button onclick="detailProduct(${product.id})" class="card-button order-item"><i class="fa-regular fa-cart-shopping-fast"></i>Mua ngay</button>
+                        <button onclick="detailProduct(${product.id})" class="card-button order-item"><i class="fa-solid fa-cart-shopping-fast"></i>Mua ngay</button>
                     </div> 
                 </div>
                 </div>
@@ -942,33 +1088,79 @@ function showHomeProduct(products) {
 
 window.onload = showHomeProduct(JSON.parse(localStorage.getItem('products')))
 
-function setupPagination(productAll, perPage) {
-    document.querySelector('.page-nav-list').innerHTML = '';
-    let page_count = Math.ceil(productAll.length / perPage);
-    for (let i = 1; i <= page_count; i++) {
-        let li = paginationChange(i, productAll, currentPage);
-        document.querySelector('.page-nav-list').appendChild(li);
+function setupPagination(productAll, perPage, currentPage) {
+    const pageNav = document.querySelector('.page-nav-list');
+    pageNav.innerHTML = '';
+    const page_count = Math.ceil(productAll.length / perPage);
+
+    // Nút prev
+    let prev = document.createElement('li');
+    prev.className = 'page-nav-item' + (currentPage === 1 ? ' disabled' : '');
+    prev.innerHTML = `<a href="javascript:;">◀</a>`;
+    if (currentPage > 1) {
+        prev.onclick = () => {
+            setupPagination(productAll, perPage, currentPage - 1);
+            displayList(productAll, perPage, currentPage - 1);
+            document.getElementById("home-service").scrollIntoView();
+        };
     }
+    pageNav.appendChild(prev);
+
+    // Trang đầu
+    pageNav.appendChild(paginationChange(1, productAll, perPage, currentPage));
+
+    // Dấu ...
+    if (currentPage > 4) {
+        let ellipsis = document.createElement('li');
+        ellipsis.className = 'page-nav-item ellipsis';
+        ellipsis.textContent = '...';
+        pageNav.appendChild(ellipsis);
+    }
+
+    // Các trang gần trang hiện tại
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(page_count - 1, currentPage + 1); i++) {
+        pageNav.appendChild(paginationChange(i, productAll, perPage, currentPage));
+    }
+
+    // Dấu ...
+    if (currentPage < page_count - 3) {
+        let ellipsis = document.createElement('li');
+        ellipsis.className = 'page-nav-item ellipsis';
+        ellipsis.textContent = '...';
+        pageNav.appendChild(ellipsis);
+    }
+
+    // Trang cuối
+    if (page_count > 1) {
+        pageNav.appendChild(paginationChange(page_count, productAll, perPage, currentPage));
+    }
+
+    // Nút next
+    let next = document.createElement('li');
+    next.className = 'page-nav-item' + (currentPage === page_count ? ' disabled' : '');
+    next.innerHTML = `<a href="javascript:;">▶</a>`;
+    if (currentPage < page_count) {
+        next.onclick = () => {
+            setupPagination(productAll, perPage, currentPage + 1);
+            displayList(productAll, perPage, currentPage + 1);
+            document.getElementById("home-service").scrollIntoView();
+        };
+    }
+    pageNav.appendChild(next);
 }
 
-function paginationChange(page, productAll, currentPage) {
-    let node = document.createElement(`li`);
+function paginationChange(page, productAll, perPage, currentPage) {
+    let node = document.createElement('li');
     node.classList.add('page-nav-item');
     node.innerHTML = `<a href="javascript:;">${page}</a>`;
     if (currentPage == page) node.classList.add('active');
-    node.addEventListener('click', function () {
-        currentPage = page;
-        displayList(productAll, perPage, currentPage);
-        let t = document.querySelectorAll('.page-nav-item.active');
-        for (let i = 0; i < t.length; i++) {
-            t[i].classList.remove('active');
-        }
-        node.classList.add('active');
+    node.onclick = function () {
+        setupPagination(productAll, perPage, page);
+        displayList(productAll, perPage, page);
         document.getElementById("home-service").scrollIntoView();
-    })
+    };
     return node;
 }
-
 // Hiển thị chuyên mục
 function showCategory(category) {
     document.getElementById('trangchu').classList.remove('hide');
@@ -981,16 +1173,52 @@ function showCategory(category) {
     displayList(productSearch, perPage, currentPageSeach);
     setupPagination(productSearch, perPage, currentPageSeach);
     document.getElementById("home-title").scrollIntoView();
+        console.log("Chọn danh mục:", category);
+
+    // Gợi ý: bạn có thể lưu danh mục được chọn
+    localStorage.setItem("danhmucDangXem", category);
+
+    // Và chuyển về trang chính (trangchu), ví dụ:
+    document.getElementById('trangchu').style.display = 'block';
+    document.getElementById('subpage-container').style.display = 'none';
+
+    // Sau đó gọi hàm để lọc sản phẩm theo danh mục (nếu có)
+    // ví dụ:
+    // renderProductTheoDanhMuc(tendanhmuc);
 }
-// Slider banner responsive + touch
+
+// Slider banner responsive + touch + dot navigation
 let currentSlide = 0;
 const slides = document.querySelectorAll('.home-slider img');
 const totalSlides = slides.length;
+
+// Tạo dot navigation
+const slider = document.querySelector('.home-slider');
+let dotsContainer = slider.querySelector('.slider-dots');
+if (!dotsContainer) {
+    dotsContainer = document.createElement('div');
+    dotsContainer.className = 'slider-dots';
+    slider.appendChild(dotsContainer);
+}
+dotsContainer.innerHTML = '';
+for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'slider-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = function() {
+        currentSlide = i;
+        showSlide(currentSlide);
+        resetInterval();
+    };
+    dotsContainer.appendChild(dot);
+}
 
 function showSlide(index) {
     slides.forEach((img, i) => {
         img.classList.toggle('active', i === index);
     });
+    // Cập nhật dot
+    const dots = dotsContainer.querySelectorAll('.slider-dot');
+    dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
 }
 function nextSlide() {
     currentSlide = (currentSlide + 1) % totalSlides;
@@ -1002,11 +1230,16 @@ function prevSlide() {
 }
 if (slides.length > 0) {
     showSlide(currentSlide);
-    setInterval(nextSlide, 4000); // Tự động chuyển ảnh mỗi 4 giây
+}
+
+// Tự động chuyển ảnh mỗi 5 giây, reset khi click dot
+let autoInterval = setInterval(nextSlide, 5000);
+function resetInterval() {
+    clearInterval(autoInterval);
+    autoInterval = setInterval(nextSlide, 5000);
 }
 
 // Vuốt cảm ứng trên mobile
-const slider = document.querySelector('.home-slider');
 let startX = 0;
 let endX = 0;
 if (slider) {
@@ -1015,8 +1248,222 @@ if (slider) {
     });
     slider.addEventListener('touchend', function(e) {
         endX = e.changedTouches[0].clientX;
-        if (endX - startX > 50) prevSlide();
-        else if (startX - endX > 50) nextSlide();
+        if (endX - startX > 50) {
+            prevSlide();
+            resetInterval();
+        }
+        else if (startX - endX > 50) {
+            nextSlide();
+            resetInterval();
+        }
     });
 }
+// Hiển thị popup QR code
+function showQrPopup() {
+    document.getElementById('qr-popup').style.display = 'flex';
+}
+function closeQrPopup() {
+    document.getElementById('qr-popup').style.display = 'none';}
+    document.getElementById('qr-popup').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeQrPopup();
+    }
+});
 
+// Đóng popup khi ấn ra ngoài
+document.getElementById('info-popup').addEventListener('click', function(e) {
+    if (e.target === this) closeInfoPopup();
+});
+
+function closeInfoPopup() {
+    document.getElementById('info-popup').style.display = 'none';
+}
+function toggleDropdown() {
+    document.getElementById("myDropdown").classList.toggle("show");
+}
+
+window.onclick = function(event) {
+    if (!event.target.matches('.dropdown-btn')) {
+        let dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+            let openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
+
+//
+ document.addEventListener("DOMContentLoaded", function () {
+        const toggleBtn = document.getElementById("menu-toggle");
+        const menuList = document.querySelector(".header-bottom .menu-list");
+
+        toggleBtn.addEventListener("click", function () {
+            menuList.classList.toggle("active");
+        });
+    });
+
+//
+function loadSubPage(page) {
+  // 1. Ẩn các phần chính (nếu có)
+  const mainSections = ['trangchu', 'account-user', 'order-history'];
+  mainSections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+
+  // 2. Hiện vùng subpage-container
+  const container = document.getElementById('subpage-container');
+  if (container) container.style.display = 'block';
+
+  // 3. Tải nội dung từ file con
+  fetch(page)
+    .then(res => {
+      if (!res.ok) throw new Error('Trang không tồn tại');
+      return res.text();
+    })
+    .then(html => {
+      container.innerHTML = html;
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // scroll lên đầu nếu cần
+    })
+    .catch(err => {
+      container.innerHTML = `<p style="color:red;">Không thể tải nội dung: ${err.message}</p>`;
+      console.error("Lỗi load subpage:", err);
+    });
+}
+// Địa chỉ động: tỉnh, huyện, xã
+document.addEventListener('DOMContentLoaded', function() {
+    const provinceSelect = document.getElementById('province-select');
+    const districtSelect = document.getElementById('district-select');
+    const wardSelect = document.getElementById('ward-select');
+
+    if (provinceSelect && districtSelect && wardSelect) {
+        // Load tỉnh
+        fetch('https://provinces.open-api.vn/api/p/')
+            .then(res => res.json())
+            .then(provinces => {
+                provinces.forEach(p => {
+                    let opt = document.createElement('option');
+                    opt.value = p.code;
+                    opt.textContent = p.name;
+                    provinceSelect.appendChild(opt);
+                });
+            });
+
+        provinceSelect.onchange = function() {
+            const code = this.value;
+            districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+            wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+            wardSelect.disabled = true;
+            if (!code) {
+                districtSelect.disabled = true;
+                return;
+            }
+            fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
+                .then(res => res.json())
+                .then(data => {
+                    data.districts.forEach(d => {
+                        let opt = document.createElement('option');
+                        opt.value = d.code;
+                        opt.textContent = d.name;
+                        districtSelect.appendChild(opt);
+                    });
+                    districtSelect.disabled = false;
+                });
+        };
+
+        districtSelect.onchange = function() {
+            const code = this.value;
+            wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+            if (!code) {
+                wardSelect.disabled = true;
+                return;
+            }
+            fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
+                .then(res => res.json())
+                .then(data => {
+                    data.wards.forEach(w => {
+                        let opt = document.createElement('option');
+                        opt.value = w.code;
+                        opt.textContent = w.name;
+                        wardSelect.appendChild(opt);
+                    });
+                    wardSelect.disabled = false;
+                });
+        };
+    }
+});
+const province = document.getElementById('province-select').selectedOptions[0].textContent;
+const district = document.getElementById('district-select').selectedOptions[0].textContent;
+const ward = document.getElementById('ward-select').selectedOptions[0].textContent;
+const fullAddress = `${ward}, ${district}, ${province}`;
+//quên pass
+document.getElementById('forgot-password-link').onclick = function() {
+    document.getElementById('forgot-password-popup').style.display = 'flex';
+    document.getElementById('forgot-message').textContent = '';
+    document.getElementById('forgot-email').value = '';
+};
+document.getElementById('forgot-send-btn').onclick = function() {
+    const email = document.getElementById('forgot-email').value.trim();
+    const msg = document.getElementById('forgot-message');
+    if (!email) {
+        msg.textContent = 'Vui lòng nhập email!';
+        return;
+    }
+    msg.style.color = '#35796b';
+    msg.textContent = 'Nếu email hợp lệ, hướng dẫn đặt lại mật khẩu sẽ được gửi đến bạn!';
+    setTimeout(() => {
+        document.getElementById('forgot-password-popup').style.display = 'none';
+    }, 3000);
+};
+//giấu dot trên mobile
+document.getElementById("menu-toggle").addEventListener("click", function () {
+    document.body.classList.toggle("menu-open");
+});
+// Đóng menu khi click vào link
+document.querySelectorAll('.header-bottom .menu-list a').forEach(function(link) {
+    link.addEventListener('click', function() {
+        document.querySelector('.header-bottom .menu-list').classList.remove('active');
+        document.body.classList.remove('menu-open'); // Nếu bạn dùng class này để ẩn slider-dots
+    });
+});
+//
+function getFullAddress() {
+    var provinceSelect = document.getElementById('province-select');
+    var districtSelect = document.getElementById('district-select');
+    var wardSelect = document.getElementById('ward-select');
+    if (!provinceSelect || !districtSelect || !wardSelect) return '';
+    var province = provinceSelect.selectedOptions[0] ? provinceSelect.selectedOptions[0].textContent : '';
+    var district = districtSelect.selectedOptions[0] ? districtSelect.selectedOptions[0].textContent : '';
+    var ward = wardSelect.selectedOptions[0] ? wardSelect.selectedOptions[0].textContent : '';
+    if (!province || !district || !ward
+        || province === "Chọn tỉnh/thành phố"
+        || district === "Chọn quận/huyện"
+        || ward === "Chọn phường/xã") return '';
+    return ward + ', ' + district + ', ' + province;
+}
+
+// Cập nhật giá trị input ẩn mỗi khi chọn địa chỉ
+['province-select', 'district-select', 'ward-select'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (sel) {
+        sel.addEventListener('change', function() {
+            var diachiInput = document.getElementById('diachinhan');
+            if (diachiInput) diachiInput.value = getFullAddress();
+        });
+    }
+});
+//khi ấn vào mục nào trong menu thì mục đó sẽ được đánh dấu là active
+document.querySelectorAll('.menu-link').forEach(function(link) {
+    link.addEventListener('click', function() {
+        document.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+document.querySelectorAll('.dropdown-content li a').forEach(function(link) {
+    link.addEventListener('click', function() {
+        document.querySelectorAll('.dropdown-content li a').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+    });
+});

@@ -1,42 +1,25 @@
+history.pushState({ page: "current" }, "", window.location.href);
 const PHIVANCHUYEN = 30000;
+function getPhiVanChuyen(tongTien) {
+    if (tongTien >= 300000) return 0;        // Miễn phí với đơn từ 300k
+    if (tongTien >= 200000) return 20000;   // 20k nếu đơn ≥ 200k
+    if (tongTien >= 100000) return 10000;    // 10k nếu đơn ≥ 100k
+    return PHIVANCHUYEN;                     // Mặc định là 30k
+}
+
 let priceFinal = document.getElementById("checkout-cart-price-final");
 // Trang thanh toan
 function thanhtoanpage(option,product) {
-    // Xu ly ngay nhan hang
-    let today = new Date();
-    let ngaymai = new Date();
-    let ngaykia = new Date();
-    ngaymai.setDate(today.getDate() + 1);
-    ngaykia.setDate(today.getDate() + 2);
-    let dateorderhtml = `<a href="javascript:;" class="pick-date active" data-date="${today}">
-        <span class="text">Hôm nay</span>
-        <span class="date">${today.getDate()}/${today.getMonth() + 1}</span>
-        </a>
-        <a href="javascript:;" class="pick-date" data-date="${ngaymai}">
-            <span class="text">Ngày mai</span>
-            <span class="date">${ngaymai.getDate()}/${ngaymai.getMonth() + 1}</span>
-        </a>
-
-        <a href="javascript:;" class="pick-date" data-date="${ngaykia}">
-            <span class="text">Ngày kia</span>
-            <span class="date">${ngaykia.getDate()}/${ngaykia.getMonth() + 1}</span>
-    </a>`
-    document.querySelector('.date-order').innerHTML = dateorderhtml;
-    let pickdate = document.getElementsByClassName('pick-date')
-    for(let i = 0; i < pickdate.length; i++) {
-        pickdate[i].onclick = function () {
-            document.querySelector(".pick-date.active").classList.remove("active");
-            this.classList.add('active');
-        }
-    }
 
     let totalBillOrder = document.querySelector('.total-bill-order');
     let totalBillOrderHtml;
     // Xu ly don hang
     switch (option) {
-        case 1: // Truong hop thanh toan san pham trong gio
+        case 1:{ // Truong hop thanh toan san pham trong gio
             // Hien thi don hang
             showProductCart();
+            let tongTien = getCartTotal();
+            let phiVC = getPhiVanChuyen(tongTien);
             // Tinh tien
             totalBillOrderHtml = `<div class="priceFlx">
             <div class="text">
@@ -50,15 +33,17 @@ function thanhtoanpage(option,product) {
         <div class="priceFlx chk-ship">
             <div class="text">Phí vận chuyển</div>
             <div class="price-detail chk-free-ship">
-                <span>${vnd(PHIVANCHUYEN)}</span>
+                <span>${vnd(phiVC)}</span>
             </div>
         </div>`;
             // Tong tien
-            priceFinal.innerText = vnd(getCartTotal() + PHIVANCHUYEN);
-            break;
-        case 2: // Truong hop mua ngay
+            priceFinal.innerText = vnd(tongTien + phiVC);
+            break;}
+        case 2: {// Truong hop mua ngay
             // Hien thi san pham
             showProductBuyNow(product);
+            let tongTien = product.soluong * product.price;
+            let phiVC = getPhiVanChuyen(tongTien);
             // Tinh tien
             totalBillOrderHtml = `<div class="priceFlx">
                 <div class="text">
@@ -72,56 +57,35 @@ function thanhtoanpage(option,product) {
             <div class="priceFlx chk-ship">
                 <div class="text">Phí vận chuyển</div>
                 <div class="price-detail chk-free-ship">
-                    <span>${vnd(PHIVANCHUYEN)}</span>
+                    <span>${vnd(phiVC)}</span>
                 </div>
             </div>`
             // Tong tien
-            priceFinal.innerText = vnd((product.soluong * product.price) + PHIVANCHUYEN);
+            priceFinal.innerText = vnd(tongTien + phiVC);
             break;
-    }
+    }}
 
     // Tinh tien
     totalBillOrder.innerHTML = totalBillOrderHtml;
-
-    // Xu ly hinh thuc giao hang
-    let giaotannoi = document.querySelector('#giaotannoi');
-    let tudenlay = document.querySelector('#tudenlay');
-    let tudenlayGroup = document.querySelector('#tudenlay-group');
+    // Hien thi trang thanh toan
+    document.querySelector('.checkout-page').classList.add('active');
+    // Hien thi cac phuong thuc thanh toan
+    let paymentMethods = document.querySelector('.checkout-payment-methods');
+    let paymentMethodsHtml = `<div class="checkout-type-order">
+        <label class="active">
+            <input type="radio" name="payment-method" value="cash" checked>
+            <span>Thanh toán khi nhận hàng</span>
+        </label>
+        <label>
+            <input type="radio" name="payment-method" value="online">
+            <span>Thanh toán online</span>
+        </label>
+        <label>
+            <input type="radio" name="payment-method" value="bank">
+            <span>Chuyển khoản ngân hàng</span>
+        </label>
+    </div>`;    
     let chkShip = document.querySelectorAll(".chk-ship");
-    
-    tudenlay.addEventListener('click', () => {
-        giaotannoi.classList.remove("active");
-        tudenlay.classList.add("active");
-        chkShip.forEach(item => {
-            item.style.display = "none";
-        });
-        tudenlayGroup.style.display = "block";
-        switch (option) {
-            case 1:
-                priceFinal.innerText = vnd(getCartTotal());
-                break;
-            case 2:
-                priceFinal.innerText = vnd((product.soluong * product.price));
-                break;
-        }
-    })
-
-    giaotannoi.addEventListener('click', () => {
-        tudenlay.classList.remove("active");
-        giaotannoi.classList.add("active");
-        tudenlayGroup.style.display = "none";
-        chkShip.forEach(item => {
-            item.style.display = "flex";
-        });
-        switch (option) {
-            case 1:
-                priceFinal.innerText = vnd(getCartTotal() + PHIVANCHUYEN);
-                break;
-            case 2:
-                priceFinal.innerText = vnd((product.soluong * product.price) + PHIVANCHUYEN);
-                break;
-        }
-    })
 
     // Su kien khu nhan nut dat hang
     document.querySelector(".complete-checkout-btn").onclick = () => {
@@ -134,6 +98,7 @@ function thanhtoanpage(option,product) {
                 break;
         }
     }
+    
 }
 
 // Hien thi hang trong gio
@@ -143,10 +108,10 @@ function showProductCart() {
     let listOrderHtml = '';
     currentuser.cart.forEach(item => {
         let product = getProduct(item);
-        listOrderHtml += `<div class="food-total">
+        listOrderHtml += `<div class="book-total">
         <div class="count">${product.soluong}x</div>
-        <div class="info-food">
-            <div class="name-food">${product.title}</div>
+        <div class="info-book">
+            <div class="name-book">${product.title}</div>
         </div>
     </div>`
     })
@@ -156,10 +121,10 @@ function showProductCart() {
 // Hien thi hang mua ngay
 function showProductBuyNow(product) {
     let listOrder = document.getElementById("list-order-checkout");
-    let listOrderHtml = `<div class="food-total">
+    let listOrderHtml = `<div class="book-total">
         <div class="count">${product.soluong}x</div>
-        <div class="info-food">
-            <div class="name-food">${product.title}</div>
+        <div class="info-book">
+            <div class="name-book">${product.title}</div>
         </div>
     </div>`;
     listOrder.innerHTML = listOrderHtml;
@@ -207,40 +172,15 @@ function closecheckout() {
 
 // Thong tin cac don hang da mua - Xu ly khi nhan nut dat hang
 function xulyDathang(product) {
-    let diachinhan = "";
-    let hinhthucgiao = "";
-    let thoigiangiao = "";
-    let giaotannoi = document.querySelector("#giaotannoi");
-    let tudenlay = document.querySelector("#tudenlay");
-    let giaongay = document.querySelector("#giaongay");
-    let giaovaogio = document.querySelector("#deliverytime");
+    // let diachinhan = "";
+    let hinhthucthanhtoan = document.querySelector('input[name="payment-method"]:checked')?.value || "cash";
     let currentUser = JSON.parse(localStorage.getItem('currentuser'));
-    // Hinh thuc giao & Dia chi nhan hang
-    if(giaotannoi.classList.contains("active")) {
-        diachinhan = document.querySelector("#diachinhan").value;
-        hinhthucgiao = giaotannoi.innerText;
-    }
-    if(tudenlay.classList.contains("active")){
-        let chinhanh1 = document.querySelector("#chinhanh-1");
-        let chinhanh2 = document.querySelector("#chinhanh-2");
-        if(chinhanh1.checked) {
-            diachinhan = "273 An Dương Vương, Phường 3, Quận 5";
-        }
-        if(chinhanh2.checked) {
-            diachinhan = "04 Tôn Đức Thắng, Phường Bến Nghé, Quận 1";
-        }
-        hinhthucgiao = tudenlay.innerText;
-    }
-
-    // Thoi gian nhan hang
-    if(giaongay.checked) {
-        thoigiangiao = "Giao ngay khi xong";
-    }
-
-    if(giaovaogio.checked) {
-        thoigiangiao = document.querySelector(".choise-time").value;
-    }
-
+    let diachinhanInput = document.querySelector("#diachinhan");
+if (!diachinhanInput) {
+    toast({ title: 'Lỗi', message: 'Không tìm thấy trường địa chỉ nhận hàng!', type: 'error', duration: 4000 });
+    return;
+}
+let diachinhan = diachinhanInput.value;
     let orderDetails = localStorage.getItem("orderDetails") ? JSON.parse(localStorage.getItem("orderDetails")) : [];
     let order = localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : [];
     let madon = createId(order);
@@ -280,22 +220,17 @@ function xulyDathang(product) {
         return;
     }
     if (diachinhan == "") {
-        // Nếu là giao tận nơi thì focus vào ô nhập địa chỉ
-        if(giaotannoi.classList.contains("active")) {
-            document.querySelector("#diachinhan").focus();
-        }
-        toast({ title: 'Chú ý', message: 'Vui lòng nhập địa chỉ nhận hàng!', type: 'warning', duration: 4000 });
+        document.querySelector("#diachinhan").focus();
+        toast({ title: 'Chú ý', message: 'Vui lòng chọn địa chỉ nhận hàng!', type: 'warning', duration: 4000 });
         return;
-    }
+}
 
     // Nếu đủ thông tin thì tiếp tục đặt hàng
     let donhang = {
         id: madon,
         khachhang: currentUser.phone,
-        hinhthucgiao: hinhthucgiao,
-        ngaygiaohang: document.querySelector(".pick-date.active").getAttribute("data-date"),
-        thoigiangiao: thoigiangiao,
-        ghichu: document.querySelector(".note-order").value,
+        hinhthucthanhtoan: hinhthucthanhtoan,
+        ghichu: document.querySelector(".note-order")?.value || "Không có ghi chú",
         tenguoinhan: tennguoinhan,
         sdtnhan: sdtnhan,
         diachinhan: diachinhan,
@@ -303,7 +238,12 @@ function xulyDathang(product) {
         tongtien:tongtien,
         trangthai: 0
     }
-
+const momoChecked = document.getElementById('payment-momo').checked;
+    const bankChecked = document.getElementById('payment-bank').checked;
+    if (momoChecked || bankChecked) {
+        showQrPopup(); // Hiện popup mã QR cho cả hai trường hợp
+        return false;
+    }
     order.unshift(donhang);
     if(product == null) {
         currentUser.cart.length = 0;
@@ -325,10 +265,21 @@ function getpriceProduct(id) {
     })
     return sp.price;
 }
-if (window.history.length <= 1) {
-    window.history.pushState({}, '', window.location.href);
-}
 window.addEventListener('popstate', function() {
     window.location.href = "index.html";
 });
 
+
+// Hiệu ứng phản hồi khi chọn radio cho thanh toán & vận chuyển
+document.querySelectorAll('.checkout-type-order').forEach(group => {
+    group.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            group.querySelectorAll('label').forEach(label => label.classList.remove('active'));
+            this.parentElement.classList.add('active');
+        });
+        // Kích hoạt sẵn cho radio được checked khi load trang
+        if (radio.checked) {
+            radio.parentElement.classList.add('active');
+        }
+    });
+});
